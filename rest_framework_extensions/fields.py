@@ -54,6 +54,9 @@ class NestedHyperlinkedRelatedField(HyperlinkedRelatedField):
         assert 'lookup_url_kwarg' not in kwargs, "Do not use `lookup_url_kwarg` use `lookup_map` instead."
         super(NestedHyperlinkedRelatedField, self).__init__(**kwargs)
 
+    def use_pk_only_optimization(self):
+        return False
+
     @cached_property
     def _lookup_map(self):
         lookup_map = self.__lookup_map or self.context.get('view', None)
@@ -85,9 +88,12 @@ class NestedHyperlinkedRelatedField(HyperlinkedRelatedField):
         return map_
 
     def get_object(self, view_name, view_args, view_kwargs):
+        def field_to_q(field):
+            return field.replace('.', '__')
         lookup_map = self._lookup_map
         lookup_kwargs = dict((
-            (lookup_map[key], value) for (key, value) in view_kwargs.items()
+            (field_to_q(lookup_map[key]), value)
+            for (key, value) in view_kwargs.items()
         ))
         return self.get_queryset().get(**lookup_kwargs)
 
